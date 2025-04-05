@@ -1,5 +1,6 @@
-# MS score(AddModule Score Method)
+# MS score (AddModule Score Method)
 geneset=list(c('gene1','gene2',....)
 scRNA<-AddModuleScore(scRNA,
                       features=geneset,
-                      name="AddModuleScore")
+                      name="MS_AddModuleScore")
+MS_table=FetchData(scRNA,vars=c('group','MS_AddModuleScore1'))
