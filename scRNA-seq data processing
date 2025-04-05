@@ -1,0 +1,53 @@
+# for sc/snRNA-seq data
+# load data ####
+sample_1 <- Read10X_h5('sample_1/filtered_feature_bc_matrix.h5')
+sample_2 <- Read10X('sample_2/filtered_feature_bc_matrix')
+
+# creat seurat object ####
+sample_1 <- CreateSeuratObject(counts = sample_1$`Gene Expression`, project = "project", min.cells = 3, min.features = 200)
+sample_2 <- CreateSeuratObject(counts = sample_2$`Gene Expression`, project = "project", min.cells = 3, min.features = 200)
+
+# set group information ####
+#sample
+sample_1@meta.data$sample='sample_1'
+sample_2@meta.data$sample='sample_2'
+#group
+sample_1@meta.data$group='control'
+sample_2@meta.data$group='disease'
+
+# merge data ####
+project_scRNA_raw=merge(
+  sample_1,
+  c(sample_2))
+
+# save data ####
+saveRDS(project_scRNA_raw,file="project_scRNA_raw.rds")
+
+# QC ####
+DefaultAssay(project_scRNA_raw) ='RNA'
+Idents(project_scRNA_raw)="sample"
+#mitochondrial genes
+project_scRNA_raw[["percent.mt"]] <- PercentageFeatureSet(project_scRNA_raw, pattern = "^MT-")
+#QC visualization
+VlnPlot(project_scRNA_raw, features=c("nFeature_RNA", "nCount_RNA","percent.mt"),pt.size = 0.01)
+
+#filter out the low-quality cells
+#standard could be changed
+project_scRNA_filtered <- subset(project_scRNA_raw,subset = 
+                 nFeature_RNA > 200 & nFeature_RNA < 5000 &
+                 nCount_RNA > 200 & nCount_RNA < 40000 &                 
+                 percent.mt < 10)
+
+# standard procedure ####
+project_scRNA_filtered = NormalizeData(project_scRNA_filtered, verbose = FALSE)
+project_scRNA_filtered = FindVariableFeatures(project_scRNA_filtered,selection.method = "vst", nfeatures = 2000)
+project_scRNA_filtered = ScaleData(project_scRNA_filtered,verbose = FALSE)
+project_scRNA_filtered = RunPCA(project_scRNA_filtered,npcs = 50, verbose = FALSE)
+#
+project_scRNA_filtered = RunHarmony(project_scRNA_filtered, group.by.vars="sample")
+ElbowPlot(project_scRNA_filtered)
+project_scRNA_filtered = RunUMAP(project_scRNA_filtered,reduction="harmony", dim=1:50)
+project_scRNA_filtered = FindNeighbors(project_scRNA_filtered,reduction="harmony", dim=1:50)
+project_scRNA_filtered = FindClusters(project_scRNA_filtered,resolution=1)
+#
+DimPlot(project_scRNA_filtered,label = F,reduction = "umap")
