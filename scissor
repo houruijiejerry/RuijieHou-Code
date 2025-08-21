@@ -9,7 +9,7 @@ bulk_dataset=t(bulk_dataset)
 #check
 colnames(bulk_dataset) == row.names(phenotype)
 
-#sissor analisys
+#scissor analisys
 tag=c('0','1')
 infos4 <- Scissor(bulk_dataset, scRNA, phenotype$FVC, tag=tag, alpha = 0.05, #seq(1,10,2)/1000
                   family = "binomial")
